@@ -14,22 +14,20 @@ class LessonSerializer(ModelSerializer):
 
 
 class CourseSerializer(ModelSerializer):
-    url = serializers.URLField(validators=[UrlValidator()])
     lesson_count = SerializerMethodField()
     lessons = LessonSerializer(many=True, read_only=True)
+    is_subscribed = SerializerMethodField()
 
     def get_lesson_count(self, course):
         return course.lessons.count()
 
-    def get_is_subcribed(self, course):
+    def get_is_subscribed(self, course):
         request = self.context.get("request")
 
         if not request or not request.user.is_authenticated:
             return False
 
-        return Subscription.objects.filter(
-            user=request.user, course=request.course
-        ).exists()
+        return Subscription.objects.filter(user=request.user, course=course).exists()
 
     class Meta:
         model = Course
