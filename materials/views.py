@@ -42,7 +42,7 @@ class LessonListApiView(ListAPIView):
     """Контроллер для просмотра всех уроков"""
 
     serializer_class = LessonSerializer
-    queryset = Lesson.objects.all()
+    queryset = Lesson.objects.all().order_by("id")
     permission_classes = [IsAuthenticated]
     pagination_class = CustomPagination
 

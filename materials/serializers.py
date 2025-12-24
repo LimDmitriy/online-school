@@ -6,11 +6,14 @@ from materials.validators import UrlValidator
 
 
 class LessonSerializer(ModelSerializer):
-    url = serializers.URLField(validators=[UrlValidator()])
+    url = serializers.URLField(
+        validators=[UrlValidator()], required=False, allow_null=True
+    )
 
     class Meta:
         model = Lesson
         fields = "__all__"
+        read_only_fields = ("owner",)
 
 
 class CourseSerializer(ModelSerializer):
