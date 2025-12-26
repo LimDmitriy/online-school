@@ -25,6 +25,7 @@ class Course(models.Model):
         verbose_name="Владелец",
         help_text="Укажите владельца",
     )
+    amount = models.PositiveIntegerField(verbose_name="Сумма оплаты")
 
     def __str__(self):
         return f"{self.title} - {self.descriptions}"
@@ -68,6 +69,7 @@ class Lesson(models.Model):
         verbose_name="Владелец",
         help_text="Укажите владельца",
     )
+    amount = models.PositiveIntegerField(verbose_name="Сумма оплаты")
 
     def __str__(self):
         return self.title

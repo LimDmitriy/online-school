@@ -63,11 +63,23 @@ class Payment(models.Model):
         blank=True,
         null=True,
     )
-    amount = models.DecimalField(
-        max_digits=10, decimal_places=2, verbose_name="Сумма оплаты"
-    )
+    amount = models.PositiveIntegerField(verbose_name="Сумма оплаты")
     payment_method = models.CharField(
         max_length=20, choices=PAYMENT_METHOD_CHOICES, verbose_name="Способ оплаты"
+    )
+    session_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="id сессии",
+        help_text="Укажите id",
+    )
+    link = models.URLField(
+        max_length=2000,
+        blank=True,
+        null=True,
+        verbose_name="Ссылка на оплату",
+        help_text="Укажите ссылку на оплату",
     )
 
     def __str__(self):
