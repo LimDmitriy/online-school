@@ -19,6 +19,7 @@ from materials.serializers import (
     LessonSerializer,
     SubscriptionSerializer,
 )
+from materials.tasks import send_course_update_email
 
 
 class CourseViewSet(ModelViewSet):
@@ -28,6 +29,10 @@ class CourseViewSet(ModelViewSet):
     queryset = Course.objects.all()
     permission_classes = [IsModerator, IsOwnerOrModerator]
     pagination_class = CustomPagination
+
+    def perform_update(self, serializer):
+        course = serializer.save()
+        send_course_update_email.delay(course.id)
 
 
 class LessonCreateApiView(CreateAPIView):
@@ -61,6 +66,10 @@ class LessonUpdateApiView(UpdateAPIView):
     serializer_class = LessonSerializer
     queryset = Lesson.objects.all()
     permission_classes = [IsAuthenticated, IsOwnerOrModerator]
+
+    def perform_update(self, serializer):
+        lesson = serializer.save()
+        send_course_update_email.delay(lesson.course.id)
 
 
 class LessonDestroyApiView(DestroyAPIView):
