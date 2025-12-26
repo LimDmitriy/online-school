@@ -25,6 +25,7 @@ class Course(models.Model):
         verbose_name="Владелец",
         help_text="Укажите владельца",
     )
+    amount = models.PositiveIntegerField(verbose_name="Сумма оплаты")
 
     def __str__(self):
         return f"{self.title} - {self.descriptions}"
@@ -68,6 +69,7 @@ class Lesson(models.Model):
         verbose_name="Владелец",
         help_text="Укажите владельца",
     )
+    amount = models.PositiveIntegerField(verbose_name="Сумма оплаты")
 
     def __str__(self):
         return self.title
@@ -75,3 +77,29 @@ class Lesson(models.Model):
     class Meta:
         verbose_name = "Урок"
         verbose_name_plural = "Уроки"
+
+
+class Subscription(models.Model):
+    user = models.ForeignKey(
+        "users.User",
+        on_delete=models.CASCADE,
+        verbose_name="Пользователь",
+        help_text="Укажите пользователя",
+    )
+    course = models.ForeignKey(
+        "materials.Course",
+        on_delete=models.CASCADE,
+        verbose_name="Курс",
+        help_text="Укажите курс",
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата подписки",
+    )
+
+    def __str__(self):
+        return f"{self.user} - {self.course}"
+
+    class Meta:
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
