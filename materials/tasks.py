@@ -31,13 +31,16 @@ def send_course_update_email(course_id):
         fail_silently=False,
     )
 
+
 User = get_user_model()
+
 
 @shared_task
 def deactivate_users():
     """Блокирует пользователей не заходивших более 30 дней"""
     month_ago = timezone.now() - timedelta(days=30)
 
-    User.objects.filter(last_login__lt=month_ago, is_active=True,).update(is_active=False)
-
-
+    User.objects.filter(
+        last_login__lt=month_ago,
+        is_active=True,
+    ).update(is_active=False)
