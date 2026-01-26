@@ -1,0 +1,43 @@
+name: Django CI/CD
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        export PATH="$HOME/.local/bin:$PATH"
+        poetry --version
+
+    - name: Install dependencies
+      run: poetry install --no-root
+
+    - name: Run Django tests
+      run: poetry run python manage.py test
+
+    - name: Deploy to server
+      if: success()
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          cd ~/drf_project
+          git pull origin develop
+          poetry install --no-root
+          poetry run python manage.py migrate
+          sudo systemctl restart gunicorn
