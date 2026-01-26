@@ -1,4 +1,4 @@
- [tool.poetry]
+[tool.poetry]
 name = "online-school"
 version = "0.1.0"
 description = ""
@@ -24,6 +24,14 @@ forex-python = "^1.9.2"
 celery = "^5.6.0"
 django-celery-beat = "^2.8.1"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.2"
+pytest-django = "^4.11.1"
+djangorestframework = "^3.16.1"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
 
 [build-system]
 requires = ["poetry-core"]
