@@ -1,53 +1,41 @@
-name: Django CI/CD
+name: Django CI/CD with Docker
 
 on:
   push:
-    branches: [ develop ]
+    branches:
+      - develop
 
 jobs:
-  test:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
         with:
-          python-version: 3.12
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          export PATH="$HOME/.local/bin:$PATH"
-          poetry --version
-
-      - name: Install dependencies
-        run: poetry install --no-root
-
-      - name: Set environment variables
-        run: |
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
-          echo "DEBUG=${{ secrets.DEBUG }}" >> $GITHUB_ENV
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> $GITHUB_ENV
-          echo "DB_USER=${{ secrets.DB_USER }}" >> $GITHUB_ENV
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> $GITHUB_ENV
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> $GITHUB_ENV
-          echo "DB_PORT=${{ secrets.DB_PORT }}" >> $GITHUB_ENV
-          echo "EMAIL_HOST=${{ secrets.EMAIL_HOST }}" >> $GITHUB_ENV
-          echo "EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}" >> $GITHUB_ENV
-          echo "STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}" >> $GITHUB_ENV
-          echo "CELERY_BROKER_URL=${{ secrets.CELERY_BROKER_URL }}" >> $GITHUB_ENV
-          echo "CELERY_RESULT_BACKEND=${{ secrets.CELERY_RESULT_BACKEND }}" >> $GITHUB_ENV
-          echo "REDIS_URL=${{ secrets.REDIS_URL }}" >> $GITHUB_ENV
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/online-school:latest
+          file: ./Dockerfile
 
   deploy:
     runs-on: ubuntu-latest
-    needs: test
-    if: success()
+    needs: build-and-push
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Deploy to server
+      - name: SSH Deploy
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_IP }}
@@ -55,9 +43,24 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: 22
           script: |
-            cd ~/drf_project
-            git pull origin develop
-            poetry install --no-root
-            poetry run python manage.py migrate
-            poetry run python manage.py collectstatic --noinput
-            sudo systemctl restart gunicorn
+            # Остановка старого контейнера (если есть)
+            docker rm -f django || true
+            # Запуск нового контейнера из Docker Hub
+            docker pull ${{ secrets.DOCKER_USERNAME }}/online-school:latest
+            docker run -d \
+              --name django \
+              -p 8000:8000 \
+              -e DJANGO_SECRET_KEY="${{ secrets.DJANGO_SECRET_KEY }}" \
+              -e DEBUG="${{ secrets.DEBUG }}" \
+              -e DB_NAME="${{ secrets.DB_NAME }}" \
+              -e DB_USER="${{ secrets.DB_USER }}" \
+              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+              -e DB_HOST="${{ secrets.DB_HOST }}" \
+              -e DB_PORT="${{ secrets.DB_PORT }}" \
+              -e EMAIL_HOST="${{ secrets.EMAIL_HOST }}" \
+              -e EMAIL_PASSWORD="${{ secrets.EMAIL_PASSWORD }}" \
+              -e STRIPE_API_KEY="${{ secrets.STRIPE_API_KEY }}" \
+              -e CELERY_BROKER_URL="${{ secrets.CELERY_BROKER_URL }}" \
+              -e CELERY_RESULT_BACKEND="${{ secrets.CELERY_RESULT_BACKEND }}" \
+              -e REDIS_URL="${{ secrets.REDIS_URL }}" \
+              ${{ secrets.DOCKER_USERNAME }}/online-school:latest
